@@ -1,0 +1,9 @@
+{
+  "name": "MrPlan",
+  "displayName": "MrPlan",
+  "extra": {
+    "eas": {
+      "projectId": "704a40c3-c607-41e5-9b14-f46af0e8186a"
+    }
+  }
+}

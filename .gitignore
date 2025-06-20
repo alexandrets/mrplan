@@ -1,0 +1,29 @@
+# React Native
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+.DS_Store
+*.pem
+
+# iOS
+ios/build/
+ios/Pods/
+ios/DerivedData/
+*.xcworkspace
+
+# Android
+android/app/build/
+android/build/
+android/app/src/main/assets/index.android.bundle
+android/app/.cxx/
+android/.gradle/
+android/app/src/debug/
+android/app/src/release/
+
+# Archivos de Entorno
+.env
+.env.*
+
+# Archivos del Editor
+.vscode/
