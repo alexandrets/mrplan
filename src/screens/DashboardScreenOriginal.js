@@ -1,263 +1,453 @@
-// src/screens/DashboardScreenOriginal.js
-
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
   ScrollView,
+  Image,
+  Modal,
+  FlatList,
   Dimensions,
-  Alert,
-  Pressable,
-  Vibration,
-  Animated, // <-- LA IMPORTACIÓN QUE FALTABA
 } from 'react-native';
-import Reanimated, { 
-  useSharedValue, 
-  useAnimatedProps, 
-  withTiming, 
-  Easing,
-  useAnimatedStyle,
-  runOnJS,
-} from 'react-native-reanimated';
-import Svg, { Circle } from 'react-native-svg';
-import LinearGradient from 'react-native-linear-gradient';
-import { useAuth } from '../context/AuthContext';
-import Icon from 'react-native-vector-icons/Feather';
-import Sound from 'react-native-sound';
+import { useNavigation } from '@react-navigation/native';
 
-import DynamicCalendarIcon from '../components/common/DynamicCalendarIcon';
+const DashboardScreenOriginal = () => {
+  const navigation = useNavigation();
+  const [isCalendarVisible, setIsCalendarVisible] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date());
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const CIRCLE_SIZE = SCREEN_WIDTH * 0.65;
-const RADIUS = (CIRCLE_SIZE - 40) / 2;
-const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
-
-const AnimatedCircle = Reanimated.createAnimatedComponent(Circle);
-
-const WORK_TIME = 60; 
-const BREAK_TIME = 10;
-
-Sound.setCategory('Playback');
-
-const DashboardScreenOriginal = ({ tasks = [], onNavigateToGTD, onAddTask, onToggleTask, onNavigateToCalendar }) => {
-  const { logout } = useAuth();
-  
-  const todayTasks = tasks.filter(task => task.section === 'today');
-  const completedTodayTasks = todayTasks.filter(task => task.completed && task.section === 'today');
-  const progress = todayTasks.length > 0 ? completedTodayTasks.length / todayTasks.length : 0;
-  
-  const percentageText = `${Math.round(progress * 100)}%`;
-
-  const [isPomodoroMode, setIsPomodoroMode] = useState(false);
-  const [timerMode, setTimerMode] = useState('work');
-  const [timeLeft, setTimeLeft] = useState(WORK_TIME);
-  const [isTimerActive, setIsTimerActive] = useState(false);
-  const intervalRef = useRef(null);
-  
-  const [motivationalText, setMotivationalText] = useState('');
-  const motivationalTextOpacity = useSharedValue(0);
-  const progressAnimation = useSharedValue(0);
-
-  const getMotivationalMessage = () => {
-    const totalCount = todayTasks.length;
-    const completedCount = completedTodayTasks.length;
-    if (totalCount === 0) return "¡Añade tu primera tarea del día!";
-    if (completedCount === 0) return "¡Un gran día empieza con un pequeño paso!";
-    if (completedCount > 0 && completedCount === totalCount) return "¡Has completado todo por hoy! 🎉";
-    if (completedCount >= 3) return "¡Impresionante! Estás en racha. 🔥";
-    if (completedCount > 0) return "¡Sigue así, vas por buen camino! 👍";
-    return "¡Tú puedes con esto!";
-  };
-
-  useEffect(() => {
-    progressAnimation.value = withTiming(progress, { duration: 800, easing: Easing.out(Easing.exp) });
-  }, [progress]);
-  
-  useEffect(() => {
-    const newMessage = getMotivationalMessage();
-    const updateTextOnJSThread = () => setMotivationalText(newMessage);
-    if (newMessage !== motivationalText) {
-      motivationalTextOpacity.value = withTiming(0, { duration: 200 }, (isFinished) => {
-        if (isFinished) runOnJS(updateTextOnJSThread)();
+  const generateCalendarDays = (date) => {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startDate = new Date(firstDay);
+    startDate.setDate(startDate.getDate() - firstDay.getDay());
+    
+    const days = [];
+    const today = new Date();
+    
+    for (let i = 0; i < 42; i++) {
+      const currentDate = new Date(startDate);
+      currentDate.setDate(startDate.getDate() + i);
+      
+      days.push({
+        day: currentDate.getDate(),
+        isCurrentMonth: currentDate.getMonth() === month,
+        isToday: currentDate.toDateString() === today.toDateString(),
       });
     }
-  }, [completedTodayTasks.length, todayTasks.length]);
-
-  useEffect(() => {
-    if (motivationalText) {
-      motivationalTextOpacity.value = withTiming(1, { duration: 350, delay: 50 });
-    }
-  }, [motivationalText]);
-  
-  const playSound = () => { /* Implement sound logic if needed */ };
-  
-  useEffect(() => {
-    if (isTimerActive && timeLeft > 0) {
-      intervalRef.current = setInterval(() => {
-        setTimeLeft(prevTime => prevTime - 1);
-      }, 1000);
-    } else if (timeLeft === 0) {
-      clearInterval(intervalRef.current);
-      Vibration.vibrate(1000);
-      playSound();
-      const nextMode = timerMode === 'work' ? 'break' : 'work';
-      const nextTime = nextMode === 'work' ? WORK_TIME : BREAK_TIME;
-      setTimerMode(nextMode);
-      setTimeLeft(nextTime);
-      setIsTimerActive(false);
-      Alert.alert(
-        nextMode === 'work' ? "¡A trabajar!" : "¡Tiempo de descanso!",
-        nextMode === 'work' ? "Comienza un nuevo ciclo de enfoque." : "Tómate 5 minutos para recargar energías."
-      );
-    }
-    return () => clearInterval(intervalRef.current);
-  }, [isTimerActive, timeLeft, timerMode]);
-  
-  const togglePomodoroMode = () => {
-    const newIsPomodoro = !isPomodoroMode;
-    if (newIsPomodoro) {
-        setIsTimerActive(false);
-        setTimerMode('work');
-        setTimeLeft(WORK_TIME);
-    }
-    setIsPomodoroMode(newIsPomodoro);
+    
+    return days;
   };
-  
-  const toggleTimer = () => setIsTimerActive(!isTimerActive);
-  const resetTimer = () => { setTimeLeft(timerMode === 'work' ? WORK_TIME : BREAK_TIME); setIsTimerActive(false); };
-  const formatTime = (seconds) => { const mins = Math.floor(seconds / 60); const secs = seconds % 60; return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`; };
-  const handleLogout = async () => { try { await logout(); } catch (e) { Alert.alert('Error', 'No se pudo cerrar sesión.'); } };
-  const sortedTodayTasks = [...todayTasks].sort((a, b) => a.completed - b.completed);
 
-  const animatedProgressProps = useAnimatedProps(() => ({
-    strokeDashoffset: CIRCUMFERENCE * (1 - progressAnimation.value),
-  }));
+  const tasks = [
+    { id: 1, text: 'Re', completed: false },
+    { id: 2, text: 'La buena', completed: false },
+    { id: 3, text: 'Venga!!!', completed: false },
+    { id: 4, text: '3333', completed: false },
+    { id: 5, text: 'Fff', completed: false },
+    { id: 6, text: 'Joooofder', completed: true },
+    { id: 7, text: 'Ddd', completed: true },
+    { id: 8, text: 'Eeeeesesssss', completed: true },
+    { id: 9, text: 'Hola', completed: true },
+  ];
 
-  const totalTime = timerMode === 'work' ? WORK_TIME : BREAK_TIME;
-  const pomodoroProgress = timeLeft / totalTime;
-  const pomodoroStrokeDashoffset = CIRCUMFERENCE * (1 - pomodoroProgress);
-
-  const motivationalTextStyle = useAnimatedStyle(() => ({
-    opacity: motivationalTextOpacity.value,
-  }));
+  const completedCount = tasks.filter(task => task.completed).length;
+  const totalCount = tasks.length;
+  const completionPercentage = Math.round((completedCount / totalCount) * 100);
 
   return (
-    <LinearGradient colors={['#5B9FE3', '#85C3FF']} style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          <View style={styles.header}>
-            <View style={{ flex: 1 }} /> 
-            <TouchableOpacity onPress={handleLogout} style={styles.menuButton}>
-              <Text style={styles.menuDots}>•••</Text>
+    <View style={styles.container}>
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.menuButton}>
+            <View style={styles.menuLine} />
+            <View style={styles.menuLine} />
+            <View style={styles.menuLine} />
+          </TouchableOpacity>
+          
+          <TouchableOpacity style={styles.profileButton}>
+            <Image
+              source={{ uri: 'https://i.pravatar.cc/40' }}
+              style={styles.profileImage}
+            />
+          </TouchableOpacity>
+        </View>
+
+        {/* Progress Circle */}
+        <View style={styles.progressContainer}>
+          <View style={styles.progressCircle}>
+            <View style={styles.progressInner}>
+              <Text style={styles.progressText}>{completionPercentage}%</Text>
+              <Text style={styles.progressLabel}>Complete</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Motivational Message */}
+        <Text style={styles.motivationalText}>
+          ¡Impresionante! Estás en racha. 🔥
+        </Text>
+
+        {/* Today Section */}
+        <View style={styles.todaySection}>
+          <View style={styles.todayHeader}>
+            <TouchableOpacity 
+              style={styles.calendarButton} 
+              onPress={() => setIsCalendarVisible(true)}
+            >
+              <Text style={styles.calendarDate}>
+                {selectedDate.getDate()}
+              </Text>
+              <Text style={styles.calendarDay}>
+                {selectedDate.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()}
+              </Text>
+            </TouchableOpacity>
+            
+            <Text style={styles.todayLabel}>Today</Text>
+            
+            <TouchableOpacity style={styles.moreButton}>
+              <Text style={styles.moreButtonText}>⋯</Text>
             </TouchableOpacity>
           </View>
 
-          <Pressable onLongPress={togglePomodoroMode} delayLongPress={800}>
-            <View style={styles.progressContainer}>
-              <Svg width={CIRCLE_SIZE} height={CIRCLE_SIZE} style={{transform: [{ rotate: '-90deg' }]}}>
-                <Circle cx={CIRCLE_SIZE / 2} cy={CIRCLE_SIZE / 2} r={RADIUS} fill="none" stroke="rgba(255, 255, 255, 0.3)" strokeWidth={20} />
-                {!isPomodoroMode ? (
-                  <AnimatedCircle cx={CIRCLE_SIZE / 2} cy={CIRCLE_SIZE / 2} r={RADIUS} fill="none" stroke="#FFFFFF" strokeWidth={20} strokeDasharray={CIRCUMFERENCE} strokeLinecap="round" animatedProps={animatedProgressProps} />
-                ) : (
-                  <Circle cx={CIRCLE_SIZE / 2} cy={CIRCLE_SIZE / 2} r={RADIUS} fill="none" stroke="#FFFFFF" strokeWidth={20} strokeDasharray={CIRCUMFERENCE} strokeLinecap="round" strokeDashoffset={pomodoroStrokeDashoffset} transform={`translate(0, ${CIRCLE_SIZE}) scale(1, -1)`} />
-                )}
-              </Svg>
-              <View style={styles.progressTextContainer}>
-                  {!isPomodoroMode ? (
-                    <>
-                      <Text style={styles.progressPercentage}>{percentageText}</Text>
-                      <Text style={styles.progressLabel}>Complete</Text>
-                    </>
-                  ) : (
-                    <>
-                      <Text style={styles.timerText}>{formatTime(timeLeft)}</Text>
-                      <Text style={styles.timerLabel}>{timerMode === 'work' ? 'Enfoque' : 'Descanso'}</Text>
-                    </>
-                  )}
-              </View>
-            </View>
-          </Pressable>
-
-          {isPomodoroMode ? (
-            <View style={styles.pomodoroControls}>
-              <TouchableOpacity style={styles.controlButton} onPress={toggleTimer}><Icon name={isTimerActive ? 'pause' : 'play'} size={24} color="#FFF" /></TouchableOpacity>
-              <TouchableOpacity style={styles.controlButton} onPress={resetTimer}><Icon name="rotate-cw" size={24} color="#FFF" /></TouchableOpacity>
-            </View>
-          ) : (
-             <Reanimated.View style={motivationalTextStyle}>
-                <Text style={styles.motivationalText}>{motivationalText}</Text>
-             </Reanimated.View>
-          )}
-
-          <View style={styles.todaySection}>
-             <View style={styles.todaySectionHeader}>
-              <DynamicCalendarIcon onPress={onNavigateToCalendar} />
-              <Text style={styles.todayLabel}>Today</Text>
-            </View>
-            <View style={styles.tasksList}>
-              {sortedTodayTasks.length > 0 ? (
-                sortedTodayTasks.map(task => (
-                  <TouchableOpacity key={task.id} style={styles.taskItem} onPress={() => onToggleTask(task.id, task.completed)} activeOpacity={0.7}>
-                    <View style={[styles.taskCheckbox, task.completed && styles.taskCheckboxCompleted]}>
-                      {task.completed && <Text style={styles.checkmark}>✓</Text>}
-                    </View>
-                    <Text style={[styles.taskText, task.completed && styles.taskTextCompleted]}>{task.title}</Text>
-                  </TouchableOpacity>
-                ))
-              ) : (
-                <Text style={styles.noTasksText}>No hay tareas para hoy.</Text>
-              )}
-            </View>
+          {/* Tasks List */}
+          <View style={styles.tasksList}>
+            {tasks.map((task) => (
+              <TouchableOpacity key={task.id} style={styles.taskItem}>
+                <View style={[
+                  styles.taskCheckbox,
+                  task.completed && styles.taskCheckboxCompleted
+                ]}>
+                  {task.completed && <Text style={styles.checkmark}>✓</Text>}
+                </View>
+                <Text style={[
+                  styles.taskText,
+                  task.completed && styles.taskTextCompleted
+                ]}>
+                  {task.text}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </View>
-        </ScrollView>
-        <View style={styles.fixedFooter}>
-          <TouchableOpacity style={styles.navigationBar} onPress={onNavigateToGTD} activeOpacity={0.7}>
-            <View style={styles.navigationBarHandle} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.addTaskButton} onPress={onAddTask} activeOpacity={0.8}>
-            <Text style={styles.addTaskButtonText}>+ Add Quick Task</Text>
-          </TouchableOpacity>
         </View>
-      </SafeAreaView>
-    </LinearGradient>
+
+        {/* Add Quick Task Button */}
+        <TouchableOpacity style={styles.addTaskButton}>
+          <Text style={styles.addTaskText}>+ Add Quick Task</Text>
+        </TouchableOpacity>
+      </ScrollView>
+
+      {/* Calendar Modal */}
+      <Modal
+        visible={isCalendarVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setIsCalendarVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.calendarModal}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                {selectedDate.toLocaleDateString('es-ES', { 
+                  month: 'long', 
+                  year: 'numeric' 
+                })}
+              </Text>
+              <TouchableOpacity 
+                onPress={() => setIsCalendarVisible(false)}
+                style={styles.closeButton}
+              >
+                <Text style={styles.closeButtonText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.weekDays}>
+              {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map((day) => (
+                <Text key={day} style={styles.weekDayText}>{day}</Text>
+              ))}
+            </View>
+            
+            <FlatList
+              data={generateCalendarDays(selectedDate)}
+              numColumns={7}
+              keyExtractor={(item, index) => index.toString()}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[
+                    styles.dayCell,
+                    item.isCurrentMonth ? styles.currentMonth : styles.otherMonth,
+                    item.isToday ? styles.today : null,
+                  ]}
+                  onPress={() => {
+                    if (item.isCurrentMonth) {
+                      setSelectedDate(new Date(selectedDate.getFullYear(), selectedDate.getMonth(), item.day));
+                      setIsCalendarVisible(false);
+                    }
+                  }}
+                >
+                  <Text style={[
+                    styles.dayText,
+                    item.isCurrentMonth ? styles.currentMonthText : styles.otherMonthText,
+                    item.isToday ? styles.todayText : null,
+                  ]}>
+                    {item.day}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        </View>
+      </Modal>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  safeArea: { flex: 1 },
-  scrollContent: { paddingHorizontal: 30, paddingTop: 5, paddingBottom: 150 },
-  header: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', marginBottom: 0, height: 40 },
-  menuButton: { padding: 10 },
-  menuDots: { fontSize: 24, color: '#FFFFFF', fontWeight: 'bold', letterSpacing: 2 },
-  progressContainer: { alignItems: 'center', marginBottom: 10 },
-  progressTextContainer: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
-  progressPercentage: { fontSize: 60, fontWeight: '300', color: '#FFFFFF', textAlign: 'center' },
-  progressLabel: { fontSize: 20, color: 'rgba(255, 255, 255, 0.8)', marginTop: 5 },
-  timerText: { fontSize: 60, fontWeight: '300', color: '#FFFFFF', textAlign: 'center' },
-  timerLabel: { fontSize: 20, color: 'rgba(255, 255, 255, 0.8)', marginTop: 5, textTransform: 'uppercase', letterSpacing: 2 },
-  pomodoroControls: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 40, marginVertical: 10, minHeight: 60, },
-  controlButton: { backgroundColor: 'rgba(255, 255, 255, 0.2)', width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center' },
-  motivationalText: { fontSize: 17, fontWeight: '500', color: '#FFFFFF', textAlign: 'center', marginBottom: 15, minHeight: 60, paddingHorizontal: 10, },
-  todaySection: { backgroundColor: 'rgba(255, 255, 255, 0.15)', borderRadius: 20, padding: 20, marginBottom: 10 },
-  todaySectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
-  todayLabel: { fontSize: 24, fontWeight: 'bold', color: '#FFFFFF', marginLeft: 15 },
-  tasksList: { gap: 15 },
-  taskItem: { flexDirection: 'row', alignItems: 'center' },
-  taskCheckbox: { width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: '#FFFFFF', marginRight: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: 'transparent' },
-  taskCheckboxCompleted: { backgroundColor: '#FFFFFF', borderColor: '#FFFFFF' },
-  checkmark: { color: '#5B9FE3', fontSize: 16, fontWeight: 'bold' },
-  taskText: { fontSize: 18, color: '#FFFFFF', flex: 1 },
-  taskTextCompleted: { textDecorationLine: 'line-through', opacity: 0.6 },
-  noTasksText: { color: 'rgba(255, 255, 255, 0.7)', textAlign: 'center', fontStyle: 'italic', paddingVertical: 20 },
-  fixedFooter: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 30, paddingBottom: 20, backgroundColor: 'transparent' },
-  navigationBar: { alignItems: 'center', paddingVertical: 10, marginBottom: 5 },
-  navigationBarHandle: { width: 50, height: 5, borderRadius: 3, backgroundColor: 'rgba(255, 255, 255, 0.5)' },
-  addTaskButton: { backgroundColor: 'rgba(255, 255, 255, 0.9)', paddingVertical: 15, borderRadius: 30, alignItems: 'center' },
-  addTaskButtonText: { color: '#5B9FE3', fontSize: 18, fontWeight: '600' },
+  container: {
+    flex: 1,
+    backgroundColor: '#4A90E2',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 50,
+    paddingBottom: 20,
+  },
+  menuButton: {
+    padding: 10,
+  },
+  menuLine: {
+    width: 24,
+    height: 3,
+    backgroundColor: 'white',
+    marginVertical: 2,
+    borderRadius: 2,
+  },
+  profileButton: {
+    padding: 5,
+  },
+  profileImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
+  progressContainer: {
+    alignItems: 'center',
+    marginVertical: 30,
+  },
+  progressCircle: {
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    borderWidth: 8,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderTopColor: 'white',
+    borderRightColor: 'white',
+    justifyContent: 'center',
+    alignItems: 'center',
+    transform: [{ rotate: '-45deg' }],
+  },
+  progressInner: {
+    transform: [{ rotate: '45deg' }],
+    alignItems: 'center',
+  },
+  progressText: {
+    fontSize: 48,
+    fontWeight: 'bold',
+    color: 'white',
+  },
+  progressLabel: {
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.8)',
+    marginTop: 5,
+  },
+  motivationalText: {
+    textAlign: 'center',
+    color: 'white',
+    fontSize: 18,
+    marginBottom: 30,
+    paddingHorizontal: 20,
+  },
+  todaySection: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    marginHorizontal: 20,
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 20,
+  },
+  todayHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  calendarButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 15,
+    padding: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 60,
+  },
+  calendarDate: {
+    color: 'white',
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  calendarDay: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 12,
+    marginTop: 2,
+  },
+  todayLabel: {
+    color: 'white',
+    fontSize: 24,
+    fontWeight: 'bold',
+    flex: 1,
+    textAlign: 'center',
+  },
+  moreButton: {
+    padding: 10,
+  },
+  moreButtonText: {
+    color: 'white',
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  tasksList: {
+    space: 15,
+  },
+  taskItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  taskCheckbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
+    marginRight: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  taskCheckboxCompleted: {
+    backgroundColor: 'white',
+    borderColor: 'white',
+  },
+  checkmark: {
+    color: '#4A90E2',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  taskText: {
+    color: 'white',
+    fontSize: 16,
+    flex: 1,
+  },
+  taskTextCompleted: {
+    textDecorationLine: 'line-through',
+    opacity: 0.6,
+  },
+  addTaskButton: {
+    backgroundColor: 'white',
+    marginHorizontal: 20,
+    borderRadius: 15,
+    padding: 20,
+    alignItems: 'center',
+    marginBottom: 30,
+  },
+  addTaskText: {
+    color: '#4A90E2',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  // Calendar Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  calendarModal: {
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 20,
+    margin: 20,
+    maxHeight: '80%',
+    width: '90%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    textTransform: 'capitalize',
+  },
+  closeButton: {
+    padding: 10,
+  },
+  closeButtonText: {
+    fontSize: 24,
+    color: '#666',
+  },
+  weekDays: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 10,
+  },
+  weekDayText: {
+    fontWeight: 'bold',
+    color: '#666',
+    textAlign: 'center',
+    flex: 1,
+  },
+  dayCell: {
+    flex: 1,
+    aspectRatio: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    margin: 1,
+  },
+  currentMonth: {
+    backgroundColor: '#f8f9fa',
+  },
+  otherMonth: {
+    backgroundColor: 'transparent',
+  },
+  today: {
+    backgroundColor: '#007AFF',
+    borderRadius: 20,
+  },
+  dayText: {
+    fontSize: 16,
+    textAlign: 'center',
+  },
+  currentMonthText: {
+    color: '#333',
+  },
+  otherMonthText: {
+    color: '#ccc',
+  },
+  todayText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
 });
 
 export default DashboardScreenOriginal;
