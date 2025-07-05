@@ -1,0 +1,71 @@
+import React from 'react';
+import {
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+
+function App() {
+  return (
+    <SafeAreaView style={styles.container}>
+      <StatusBar backgroundColor="#6200EE" />
+      <ScrollView contentInsetAdjustmentBehavior="automatic">
+        <View style={styles.header}>
+          <Text style={styles.title}>🎯 MrPlan</Text>
+          <Text style={styles.subtitle}>Tu App GTD Personal</Text>
+        </View>
+        
+        <View style={styles.content}>
+          <Text style={styles.section}>✅ App funcionando!</Text>
+          <Text style={styles.description}>
+            Próximos pasos:
+            {'\n'}• Configurar Firebase Auth
+            {'\n'}• Crear pantallas
+            {'\n'}• Implementar GTD
+          </Text>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F5F5F5',
+  },
+  header: {
+    backgroundColor: '#6200EE',
+    padding: 30,
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: 'white',
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#E8E8E8',
+  },
+  content: {
+    padding: 24,
+  },
+  section: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#2E7D32',
+    marginBottom: 16,
+  },
+  description: {
+    fontSize: 16,
+    lineHeight: 24,
+    color: '#424242',
+  },
+});
+
+export default App;

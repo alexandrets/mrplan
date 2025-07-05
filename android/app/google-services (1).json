@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "304281994978",
+    "project_id": "mrplan-f15a2",
+    "storage_bucket": "mrplan-f15a2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:304281994978:android:0dd1d7a229b3ae9bd7c0bb",
+        "android_client_info": {
+          "package_name": "com.mrplan"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "304281994978-2tije5qrg446dc1o6untfcclf6ljf6gm.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.mrplan",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "304281994978-20cr9pcv0367vvaak1f82u5cqvbq1am7.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDwhE9GLKHA1z-kJ5I7DyewtXSyI82kBro"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "304281994978-20cr9pcv0367vvaak1f82u5cqvbq1am7.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "304281994978-ldtb96ri84g41tkdv2773q9at8tg037e.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "org.reactjs.native.example.MrPlan"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
