@@ -1,0 +1,15 @@
+# Para eliminar 'node_modules/' del rastreo de Git (si estaba incluido)
+git rm -r --cached node_modules/
+
+# Para eliminar 'build/' del rastreo de Git (si estaba incluido)
+git rm -r --cached build/
+
+# Para eliminar 'dist/' del rastreo de Git (si estaba incluido)
+git rm -r --cached dist/
+
+# Si es un proyecto React Native, es CRUCIAL eliminar también los directorios de build de iOS/Android
+git rm -r --cached ios/build/
+git rm -r --cached ios/Pods/
+git rm -r --cached android/build/
+git rm -r --cached android/.gradle/
+# Y también cualquier otro directorio que hayas añadido a tu .gitignore en el paso 1 que sabes que es grande
